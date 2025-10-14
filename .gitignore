@@ -1,0 +1,39 @@
+# -------------------------------
+# General
+# -------------------------------
+.DS_Store
+Thumbs.db
+*.log
+*.env
+.env
+.vscode/
+.idea/
+dist/
+build/
+tmp/
+coverage/
+
+# -------------------------------
+# Node / Backend
+# -------------------------------
+github-integration-backend/node_modules/
+github-integration-backend/.env
+github-integration-backend/package-lock.json
+github-integration-backend/npm-debug.log
+
+# -------------------------------
+# Angular / Frontend
+# -------------------------------
+github-integration-frontend/node_modules/
+github-integration-frontend/dist/
+github-integration-frontend/.env
+github-integration-frontend/.angular/
+github-integration-frontend/package-lock.json
+
+# -------------------------------
+# Misc / OS
+# -------------------------------
+*.swp
+*.swo
+*.bak
+*.tmp
