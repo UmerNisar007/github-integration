@@ -32,9 +32,7 @@ mongoose
   .then(() => console.log("✅ MongoDB Connected Successfully"))
   .catch((err) => console.log("❌ MongoDB Connection Failed:", err));
 
-// -------------------------------
 // Passport GitHub Strategy Config
-// -------------------------------
 passport.use(
   new GitHubStrategy(
     {
@@ -46,8 +44,8 @@ passport.use(
       const userData = {
         username: profile.username,
         githubId: profile.id,
-        avatarUrl: profile.photos[0].value,
-        profileUrl: profile.profileUrl,
+        avatarUrl: profile._json.avatar_url || "",
+        profileUrl: profile._json.html_url || "",
         accessToken: accessToken,
       };
       return done(null, userData);
@@ -58,9 +56,7 @@ passport.use(
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
-// -------------------------------
 // Routes
-// -------------------------------
 app.use("/api/github", githubRoutes);
 
 // -------------------------------
