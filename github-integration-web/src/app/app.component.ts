@@ -3,10 +3,17 @@ import { RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-root',
+  standalone: true,
   imports: [RouterOutlet],
-  templateUrl: './app.component.html',
-  styleUrl: './app.component.scss'
+  template: `
+    <router-outlet></router-outlet>
+  `,
+  styles: [`
+    :host {
+      display: block;
+      height: 100%;
+      background: #f5f5f5;
+    }
+  `]
 })
-export class AppComponent {
-  title = 'github-integration-web';
-}
+export class AppComponent {}

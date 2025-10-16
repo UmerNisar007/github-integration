@@ -1,0 +1,55 @@
+<div class="data-viewer">
+  <div class="header">
+    <div>
+      <h2>📊 GitHub Data Viewer</h2>
+      <p class="subtitle">Browse and filter GitHub integration data</p>
+    </div>
+
+    <div class="actions">
+      <mat-form-field appearance="outline" class="entity-field">
+        <mat-label>Entity</mat-label>
+        <mat-select [(ngModel)]="selectedCollection" (selectionChange)="loadData()">
+          <mat-option *ngFor="let c of collections" [value]="c">{{ c | titlecase }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>Search</mat-label>
+        <input matInput placeholder="Type and press Enter" [(ngModel)]="search" (keyup.enter)="loadData()" />
+        <button mat-icon-button matSuffix (click)="loadData()">
+          <mat-icon>search</mat-icon>
+        </button>
+      </mat-form-field>
+
+      <button mat-flat-button color="primary" (click)="loadData()" class="refresh-btn">
+        <mat-icon>refresh</mat-icon> Refresh
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+    <ag-grid-angular
+      class="ag-theme-quartz grid"
+      [rowData]="rowData"
+      [columnDefs]="columnDefs"
+      [defaultColDef]="defaultColDef"
+      [animateRows]="true"
+      [pagination]="true"
+      [paginationPageSize]="pageSize"
+      (gridReady)="onGridReady($event)"
+      (sortChanged)="onSortChanged($event)">
+    </ag-grid-angular>
+  </div>
+
+  <div class="footer">
+    <button mat-stroked-button color="primary" (click)="prevPage()" [disabled]="page <= 1">
+      <mat-icon>chevron_left</mat-icon> Prev
+    </button>
+
+    <span>Page {{ page }} of {{ totalPages }}</span>
+
+    <button mat-stroked-button color="primary" (click)="nextPage()" [disabled]="page * pageSize >= totalRows">
+      Next <mat-icon>chevron_right</mat-icon>
+    </button>
+  </div>
+</div>

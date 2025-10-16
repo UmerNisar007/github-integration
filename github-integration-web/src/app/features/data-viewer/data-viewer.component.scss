@@ -1,0 +1,99 @@
+.data-viewer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 32px;
+  background: #f9fafb;
+  min-height: 100vh;
+
+  .header {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: white;
+    padding: 20px 24px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+
+    h2 {
+      font-size: 1.6rem;
+      font-weight: 600;
+      color: #111827;
+      margin: 0;
+    }
+
+    .subtitle {
+      color: #6b7280;
+      font-size: 0.95rem;
+      margin-top: 4px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 16px;
+      margin-top: 10px;
+
+      .entity-field,
+      .search-field {
+        width: 250px;
+      }
+
+      .refresh-btn {
+        height: 56px;
+        padding: 0 20px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 20px;
+      }
+    }
+  }
+
+  .content {
+    background: white;
+    padding: 0;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+
+    .grid {
+      height: calc(100vh - 280px);
+      width: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+  }
+
+  .footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    background: white;
+    padding: 12px 20px;
+    border-radius: 12px;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.05);
+
+    span {
+      color: #374151;
+      font-weight: 500;
+    }
+
+    button {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+  }
+}
+
+/* AG Grid modern look */
+.ag-theme-quartz {
+  --ag-header-background-color: #f1f5f9;
+  --ag-header-foreground-color: #1e293b;
+  --ag-row-hover-color: #f9fafb;
+  --ag-font-size: 14px;
+  --ag-font-family: 'Inter', sans-serif;
+}

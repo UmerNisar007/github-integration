@@ -1,0 +1,28 @@
+<mat-card class="integration-card">
+  <h2>GitHub Integration</h2>
+
+  <div *ngIf="!status?.connected">
+    <p>Connect your GitHub account to begin.</p>
+    <button mat-raised-button color="primary" (click)="connect()">Connect to GitHub</button>
+  </div>
+
+  <div *ngIf="status?.connected">
+    <p>
+      ✅ Connected as <strong>{{ status.username }}</strong><br>
+      Connected at: {{ status.connectedAt | date:'medium' }}
+    </p>
+
+    <mat-accordion>
+      <mat-expansion-panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title>Integration Actions</mat-panel-title>
+        </mat-expansion-panel-header>
+
+        <button mat-stroked-button color="accent" (click)="resync()" [disabled]="loading">
+          🔄 {{ loading ? 'Resyncing...' : 'Resync Integration' }}
+        </button>
+        <button mat-stroked-button color="warn" (click)="remove()">🗑 Remove Integration</button>
+      </mat-expansion-panel>
+    </mat-accordion>
+  </div>
+</mat-card>
