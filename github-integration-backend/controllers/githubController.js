@@ -90,6 +90,9 @@ export const resyncIntegration = async (req, res) => {
     const token = integration.accessToken;
     const orgsFetched = [];
 
+    console.log("Starting GitHub resync for integration:", integration.username);
+
+    // Fetch all user orgs
     await fetchUserOrgs(token, async (orgsPage) => {
       const ops = orgsPage.map((org) => {
         orgsFetched.push(org.login);
@@ -111,40 +114,59 @@ export const resyncIntegration = async (req, res) => {
           },
         };
       });
-      if (ops.length) await Organization.bulkWrite(ops, { ordered: false });
+
+      if (ops.length) {
+        const result = await Organization.bulkWrite(ops, { ordered: false });
+        console.log("Orgs upserted:", result.upsertedCount || 0);
+      }
     });
 
+    console.log("Orgs fetched:", orgsFetched);
+
+    const repoList = [];
+
     for (const orgLogin of orgsFetched) {
-      const repoList = [];
-      await fetchOrgRepos(orgLogin, token, async (reposPage) => {
-        const repoOps = reposPage.map((r) => ({
-          updateOne: {
-            filter: { id: r.id },
-            update: {
-              $set: {
-                id: r.id,
-                name: r.name,
-                full_name: r.full_name,
-                private: r.private,
-                html_url: r.html_url,
-                description: r.description,
-                owner_login: r.owner?.login,
-                raw: r,
-                _integrationId: integration._id,
-                _orgId: r.owner?.id,
-                fetchedAt: new Date(),
+      try {
+        await fetchOrgRepos(orgLogin, token, async (reposPage) => {
+          const repoOps = reposPage.map((r) => ({
+            updateOne: {
+              filter: { id: r.id },
+              update: {
+                $set: {
+                  id: r.id,
+                  name: r.name,
+                  full_name: r.full_name,
+                  private: r.private,
+                  html_url: r.html_url,
+                  description: r.description,
+                  owner_login: r.owner?.login,
+                  raw: r,
+                  _integrationId: integration._id,
+                  _orgId: r.owner?.id,
+                  fetchedAt: new Date(),
+                },
               },
+              upsert: true,
             },
-            upsert: true,
-          },
-        }));
+          }));
 
-        if (repoOps.length) await Repo.bulkWrite(repoOps, { ordered: false });
+          if (repoOps.length) {
+            const result = await Repo.bulkWrite(repoOps, { ordered: false });
+            console.log(`Repos upserted for org ${orgLogin}:`, result.upsertedCount || 0);
+          }
 
-        repoList.push(...reposPage.map((r) => ({ owner: r.owner.login, name: r.name, id: r.id })));
-      });
+          repoList.push(...reposPage.map((r) => ({ owner: r.owner.login, name: r.name, id: r.id })));
+        });
+      } catch (err) {
+        console.error("Error fetching repos for org:", orgLogin, err);
+      }
+    }
 
-      for (const r of repoList) {
+    console.log("Total repos fetched:", repoList.length);
+
+    // Fetch commits, pulls, issues, comments, and users
+    for (const r of repoList) {
+      try {
         await fetchRepoCommits(r.owner, r.name, token, async (commitsPage) => {
           const commitOps = commitsPage.map((c) => {
             const sha = c.sha;
@@ -172,9 +194,17 @@ export const resyncIntegration = async (req, res) => {
             };
           });
 
-          if (commitOps.length) await Commit.bulkWrite(commitOps, { ordered: false });
+          if (commitOps.length) {
+            const result = await Commit.bulkWrite(commitOps, { ordered: false });
+            console.log(`Commits upserted for repo ${r.name}:`, result.upsertedCount || 0);
+          }
         });
+      } catch (err) {
+        console.error("Error fetching commits for repo:", r.name, err);
+      }
 
+      // Pulls
+      try {
         await fetchRepoPulls(r.owner, r.name, token, async (pullsPage) => {
           const pullOps = pullsPage.map((p) => ({
             updateOne: {
@@ -196,9 +226,17 @@ export const resyncIntegration = async (req, res) => {
               upsert: true,
             },
           }));
-          if (pullOps.length) await Pull.bulkWrite(pullOps, { ordered: false });
+          if (pullOps.length) {
+            const result = await Pull.bulkWrite(pullOps, { ordered: false });
+            console.log(`Pulls upserted for repo ${r.name}:`, result.upsertedCount || 0);
+          }
         });
+      } catch (err) {
+        console.error("Error fetching pulls for repo:", r.name, err);
+      }
 
+      // Issues + comments
+      try {
         await fetchRepoIssues(r.owner, r.name, token, async (issuesPage) => {
           const issueOps = issuesPage.map((iss) => ({
             updateOne: {
@@ -220,65 +258,83 @@ export const resyncIntegration = async (req, res) => {
               upsert: true,
             },
           }));
-          if (issueOps.length) await Issue.bulkWrite(issueOps, { ordered: false });
+
+          if (issueOps.length) {
+            const result = await Issue.bulkWrite(issueOps, { ordered: false });
+            console.log(`Issues upserted for repo ${r.name}:`, result.upsertedCount || 0);
+          }
 
           for (const iss of issuesPage) {
             if (!iss.comments || iss.comments === 0) continue;
-            await fetchIssueComments(r.owner, r.name, iss.number, token, async (commentsPage) => {
-              const changelogOps = commentsPage.map((c) => ({
-                updateOne: {
-                  filter: { id: `${r.id}-${iss.number}-${c.id}` },
-                  update: {
-                    $set: {
-                      id: `${r.id}-${iss.number}-${c.id}`,
-                      issue_id: iss.id,
-                      body: c.body,
-                      user_login: c.user?.login,
-                      raw: c,
-                      repo_id: r.id,
-                      _integrationId: integration._id,
-                      fetchedAt: new Date(),
+            try {
+              await fetchIssueComments(r.owner, r.name, iss.number, token, async (commentsPage) => {
+                const changelogOps = commentsPage.map((c) => ({
+                  updateOne: {
+                    filter: { id: `${r.id}-${iss.number}-${c.id}` },
+                    update: {
+                      $set: {
+                        id: `${r.id}-${iss.number}-${c.id}`,
+                        issue_id: iss.id,
+                        body: c.body,
+                        user_login: c.user?.login,
+                        raw: c,
+                        repo_id: r.id,
+                        _integrationId: integration._id,
+                        fetchedAt: new Date(),
+                      },
                     },
+                    upsert: true,
                   },
-                  upsert: true,
-                },
-              }));
-              if (changelogOps.length) await IssueChangelog.bulkWrite(changelogOps, { ordered: false });
-            });
+                }));
+                if (changelogOps.length) {
+                  const result = await IssueChangelog.bulkWrite(changelogOps, { ordered: false });
+                  console.log(`Issue comments upserted for issue ${iss.number}:`, result.upsertedCount || 0);
+                }
+              });
+            } catch (err) {
+              console.error("Error fetching comments for issue:", iss.number, err);
+            }
           }
         });
+      } catch (err) {
+        console.error("Error fetching issues for repo:", r.name, err);
+      }
 
-        try {
-          const ownerUser = await fetchUserByUsername(r.owner, token);
-          if (ownerUser && ownerUser.id) {
-            await GitHubUser.updateOne(
-              { id: ownerUser.id },
-              {
-                $set: {
-                  id: ownerUser.id,
-                  login: ownerUser.login,
-                  name: ownerUser.name,
-                  avatar_url: ownerUser.avatar_url,
-                  html_url: ownerUser.html_url,
-                  raw: ownerUser,
-                  _integrationId: integration._id,
-                  fetchedAt: new Date(),
-                },
+      // Repo owner as GitHubUser
+      try {
+        const ownerUser = await fetchUserByUsername(r.owner, token);
+        if (ownerUser && ownerUser.id) {
+          const result = await GitHubUser.updateOne(
+            { id: ownerUser.id },
+            {
+              $set: {
+                id: ownerUser.id,
+                login: ownerUser.login,
+                name: ownerUser.name,
+                avatar_url: ownerUser.avatar_url,
+                html_url: ownerUser.html_url,
+                raw: ownerUser,
+                _integrationId: integration._id,
+                fetchedAt: new Date(),
               },
-              { upsert: true }
-            );
-          }
-        } catch (err) {
+            },
+            { upsert: true }
+          );
+          console.log(`User upserted: ${ownerUser.login}`);
         }
+      } catch (err) {
+        console.error("Error fetching owner user for repo:", r.name, err);
       }
     }
 
+    console.log("✅ Resync completed successfully");
     return res.json({ success: true, message: "Resync completed" });
   } catch (err) {
     console.error("Resync error:", err);
     return res.status(500).json({ success: false, error: err.message });
   }
 };
+
 
 /**
  * DELETE /api/github/:integrationId
