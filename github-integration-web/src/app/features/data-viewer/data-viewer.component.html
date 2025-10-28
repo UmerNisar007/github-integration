@@ -29,19 +29,29 @@
 
   <div class="content">
     <ag-grid-angular
-      class="ag-theme-quartz grid"
+      style="width: 100%; height: 600px;"
+      baseTheme="quartz"
       [rowData]="rowData"
       [columnDefs]="columnDefs"
       [defaultColDef]="defaultColDef"
-      [animateRows]="true"
-      [pagination]="true"
-      [paginationPageSize]="pageSize"
       (gridReady)="onGridReady($event)"
       (sortChanged)="onSortChanged($event)">
     </ag-grid-angular>
   </div>
 
   <div class="footer">
+    <mat-form-field appearance="outline" class="page-size-field">
+    <mat-label>Page Size</mat-label>
+    <mat-select
+      [value]="pageSize"
+      (selectionChange)="onPageSizeChanged($event)">
+      <mat-option [value]="10">10</mat-option>
+      <mat-option [value]="20">20</mat-option>
+      <mat-option [value]="25">25</mat-option>
+      <mat-option [value]="50">50</mat-option>
+    </mat-select>
+    </mat-form-field>
+
     <button mat-stroked-button color="primary" (click)="prevPage()" [disabled]="page <= 1">
       <mat-icon>chevron_left</mat-icon> Prev
     </button>

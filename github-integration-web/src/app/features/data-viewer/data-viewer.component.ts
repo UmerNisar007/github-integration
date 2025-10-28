@@ -34,6 +34,7 @@ export class DataViewerComponent implements OnInit {
   columnDefs: any[] = [];
   search = '';
   loading = false;
+  integrationId = '';
 
   // Pagination & Sorting
   page = 1;
@@ -58,6 +59,12 @@ export class DataViewerComponent implements OnInit {
   ngOnInit() {
     this.github.getCollections().subscribe(res => {
       this.collections = res.collections || [];
+    });
+
+    this.github.getStatus().subscribe(status => {
+      if (status && status._id) {
+        this.integrationId = status._id;
+      }
     });
   }
 
@@ -93,14 +100,16 @@ export class DataViewerComponent implements OnInit {
       search: this.search
     };
 
-    this.github.getData(this.selectedCollection, query).subscribe({
+    this.github.getData(this.selectedCollection, query, this.integrationId).subscribe({
       next: (res) => {
         this.rowData = res.data || [];
         this.totalRows = res.total || 0;
         if (res.columns?.length) {
-          this.columnDefs = res.columns.map((c: any) => ({
+          this.columnDefs = res.columns
+          .filter((c: { field: string; }) => c.field !== 'raw')
+          .map((c: any) => ({
             field: c.field,
-            headerName: c.headerName || c.field,
+            headerName: c.headerName || this.formatHeader(c.field),
           }));
         }
         this.loading = false;
@@ -109,6 +118,12 @@ export class DataViewerComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+  
+  formatHeader(field: string): string {
+    return field
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, char => char.toUpperCase());
   }
 
   nextPage() {
@@ -127,6 +142,13 @@ export class DataViewerComponent implements OnInit {
 
   get totalPages(): number {
     return Math.ceil(this.totalRows / this.pageSize) || 1;
+  }
+
+  onPageSizeChanged(event: any) {
+    this.pageSize = event.value;
+    this.page = 1
+    console.log("🔄 Page size changed to:", this.pageSize);
+    this.loadData();
   }
 
 }

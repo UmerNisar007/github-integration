@@ -90,7 +90,7 @@ export const resyncIntegration = async (req, res) => {
     const token = integration.accessToken;
     const orgsFetched = [];
 
-    console.log("Starting GitHub resync for integration:", integration.username);
+    console.log("Starting GitHub resync for integration: with token:", integration.username,token.slice(0, 10));
 
     // Fetch all user orgs
     await fetchUserOrgs(token, async (orgsPage) => {
@@ -120,8 +120,6 @@ export const resyncIntegration = async (req, res) => {
         console.log("Orgs upserted:", result.upsertedCount || 0);
       }
     });
-
-    console.log("Orgs fetched:", orgsFetched);
 
     const repoList = [];
 
@@ -161,8 +159,6 @@ export const resyncIntegration = async (req, res) => {
         console.error("Error fetching repos for org:", orgLogin, err);
       }
     }
-
-    console.log("Total repos fetched:", repoList.length);
 
     // Fetch commits, pulls, issues, comments, and users
     for (const r of repoList) {
@@ -404,6 +400,7 @@ export const getDataFromCollection = async (req, res) => {
   const sortDir = req.query.sortDir === "desc" ? -1 : 1;
   const search = req.query.search || "";
   const filters = req.query.filters ? JSON.parse(req.query.filters) : {};
+  const integrationId = req.query.integrationId || null;
 
   const map = {
     organizations: Organization,
@@ -421,6 +418,10 @@ export const getDataFromCollection = async (req, res) => {
 
   try {
     const query = { ...Object.create(null) };
+
+    if (integrationId) {
+      query["_integrationId"] = integrationId;
+    }
 
     for (const [field, value] of Object.entries(filters || {})) {
       if (typeof value === "string") {
@@ -440,7 +441,7 @@ export const getDataFromCollection = async (req, res) => {
         if (textFields.length) {
           query["$or"] = textFields.map((f) => ({ [f]: { $regex: search, $options: "i" } }));
         } else {
-          query["$or"] = [{ "raw": { $regex: search, $options: "i" } }];
+          query["$or"] = [{ raw: { $regex: search, $options: "i" } }];
         }
       }
     }

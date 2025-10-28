@@ -6,6 +6,10 @@ import { AppComponent } from './app/app.component';
 import { routes } from './app/app.routes';
 import { ApiInterceptor } from './app/core/services/api.interceptor';
 
+import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community';
+
+ModuleRegistry.registerModules([AllCommunityModule]);
+
 bootstrapApplication(AppComponent, {
   providers: [
     provideRouter(routes),

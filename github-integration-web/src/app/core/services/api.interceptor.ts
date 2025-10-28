@@ -15,7 +15,7 @@ export class ApiInterceptor implements HttpInterceptor {
     const clonedRequest = req.clone({
       setHeaders: {
         'Content-Type': 'application/json'
-        // 'Authorization': `Bearer ${token}` // Uncomment when token auth is added
+        // 'Authorization': `Bearer ${token}` 
       }
     });
 

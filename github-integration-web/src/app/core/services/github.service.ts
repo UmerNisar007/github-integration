@@ -26,18 +26,19 @@ export class GithubService {
 
   getData(
     collection: string,
-    query: any,
-    page: number = 0,
-    limit: number = 50,
-    sortField: string = '',
-    sortOrder: 'asc' | 'desc' = 'asc'
+    query: any = {},
+    integrationId?: string
   ): Observable<any> {
     let params = new HttpParams()
-      .set('page', page)
-      .set('limit', limit)
+      .set('page', query.page || 1)
+      .set('pageSize', query.pageSize || 25)
       .set('search', query.search || '')
-      .set('sortField', sortField)
-      .set('sortOrder', sortOrder);
+      .set('sortField', query.sortField || 'fetchedAt')
+      .set('sortDir', query.sortDir || 'asc');
+
+    if (integrationId) {
+      params = params.set('integrationId', integrationId);
+    }
 
     return this.http.get(`${this.baseUrl}/data/${collection}`, { params });
   }
